@@ -1,4 +1,4 @@
-git+https://github.com/lawlesst/jupyter-notebook-params@master
+git+https://github.com/lawlesst/jupyter-notebook-params#egg=itap
 jupyter_contrib_nbextensions
 requests
 progressbar
