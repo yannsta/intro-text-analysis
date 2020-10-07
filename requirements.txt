@@ -1,5 +1,4 @@
-
-jupyter-notebookparams
+git+https://github.com/lawlesst/jupyter-notebook-params@master
 jupyter_contrib_nbextensions
 requests
 progressbar
