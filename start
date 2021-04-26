@@ -5,8 +5,10 @@
 version=0.1
 
 cd /tmp
-mv ~/tdm_client.py .
+mv ~/src/tdm_client.py .
 python tdm_client.py install
+mv ~/src/constellate-plugin .
+pip install constellate-plugin/
 cd -
 
 # Book files not needed for notebooks.
