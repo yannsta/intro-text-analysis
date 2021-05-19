@@ -27,8 +27,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-#SERVICE_URL = 'https://backend.tdm-pilot.org/'
-SERVICE_URL = "http://localhost:8000/"
+SERVICE_URL = 'https://backend.tdm-pilot.org/'
+#SERVICE_URL = "http://localhost:8000/"
 
 if os.environ.get("COLAB_GPU") is not None:
     home = "/content"
