@@ -11,6 +11,7 @@ import os
 import sys
 import zipfile
 from pathlib import Path
+import time
 from urllib.request import urlretrieve
 
 import progressbar
@@ -26,8 +27,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-SERVICE_URL = 'https://backend.tdm-pilot.org/'
-#SERVICE_URL = "http://localhost:8000/"
+#SERVICE_URL = 'https://backend.tdm-pilot.org/'
+SERVICE_URL = "http://localhost:8000/"
 
 if os.environ.get("COLAB_GPU") is not None:
     home = "/content"
@@ -39,8 +40,10 @@ Path(datasets_dir).mkdir(parents=True, exist_ok=True)
 
 
 def display_terms_of_use():
-    msg = """Use and download of datasets is covered by the <a target="_blank" href="https://tdm-pilot.org/terms-and-conditions/">Terms & Conditions of Use</a>"""
+    msg = """Constellate: use and download of datasets is covered by the <a target="_blank" href="https://tdm-pilot.org/terms-and-conditions/">Terms & Conditions of Use</a>"""
     display(HTML(msg))
+
+display_terms_of_use()
 
 
 def display_description(description):
@@ -81,30 +84,47 @@ def get_description(dataset_id):
     return rsp.json()
 
 
-def _download_file(dataset_id, download_type, file_name=None, force=False):
-    description = get_description(dataset_id)
-    _ = display_description(description)
+def _get_download_type_details(description, download_type):
     info = None
     for download in description["downloads"]:
         if download["download_type"] == download_type:
             info = download
             break
+    return info
+
+
+def _download_file(dataset_id, download_type, file_name=None, force=False):
+    description = get_description(dataset_id)
+    _ = display_description(description)
+    info = _get_download_type_details(description, download_type)
+
     if (info is None):
         display_file_not_found_error(dataset_id, download_type)
         raise Exception(f"Dataset {dataset_id} {download_type} not found.")
-    elif (info["status"] != "complete"):
-        display_file_not_found_error(dataset_id, download_type)
-        raise Exception(f"Dataset {dataset_id} {download_type} not ready. Status: {info['status']} and {info['perc_complete']}% complete.")
-    else:
-        output_path = os.path.join(datasets_dir, file_name or info["file_name"])
-        if (force is False) and (os.path.exists(output_path)):
-            logging.info(f"File {output_path} exists. Not re-downloading.")
-            return output_path
-        else:
-            logging.info(f"Downloading {dataset_id} metadata to {output_path}")
-            _ = urlretrieve(info["url"], output_path, ProgressBar())
-            display_terms_of_use()
-            return output_path
+
+    output_path = os.path.join(datasets_dir, file_name or info["file_name"])
+    if (force is False) and (os.path.exists(output_path)):
+        logging.info(f"File {output_path} exists. Not re-downloading.")
+        return output_path
+
+    attempts = 0
+    delay = 5
+    max_attempts = 10
+    while info["status"] == "in-progress":
+        attempts += 1
+        logging.info(f"{dataset_id} is in progress. Waiting {delay} seconds.")
+        time.sleep(delay)
+        description = get_description(dataset_id)
+        info = _get_download_type_details(description, download_type)
+        if attempts > max_attempts:
+            raise Exception(f"Dataset download {download_type} not found after delaying {delay * attempts} seconds.")
+
+    if info["status"] != "complete":
+        raise Exception(f"Dataset {dataset_id}. Unexpected error. {download_type} not found. Status {info['status']}")
+
+    logging.info(f"Downloading {dataset_id} metadata to {output_path}")
+    _ = urlretrieve(info["url"], output_path, ProgressBar())
+    return output_path
 
 
 def get_metadata(dataset_id, fname=None, force=False):
