@@ -87,7 +87,7 @@ def get_description(dataset_id):
 def _get_download_type_details(description, download_type):
     info = None
     for download in description["downloads"]:
-        if download["download_type"] == download_type:
+        if download["name"] == download_type:
             info = download
             break
     return info
